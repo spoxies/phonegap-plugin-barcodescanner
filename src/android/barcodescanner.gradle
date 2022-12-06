@@ -6,10 +6,19 @@ repositories{
 }
 
 dependencies {
-    compile(name:'barcodescanner-release-2.1.5', ext:'aar')
+    implementation 'com.journeyapps:zxing-android-embedded:3.0.2@aar'
+    implementation 'com.google.zxing:core:3.2.0'
 }
 
 android {
+    buildToolsVersion '23.0.2' // Older versions may give compile errors
+}
+
+android {
+    defaultConfig {
+        // Required when setting minSdkVersion to 20 or lower
+        multiDexEnabled true
+    }
     packagingOptions {
         exclude 'META-INF/NOTICE'
         exclude 'META-INF/LICENSE'

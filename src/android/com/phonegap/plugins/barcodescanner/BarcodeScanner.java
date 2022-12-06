@@ -1,13 +1,14 @@
 /**
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
- *
+ * <p>
  * Copyright (c) Matt Kane 2010
  * Copyright (c) 2011, IBM Corporation
  * Copyright (c) 2013, Maciej Nux Jaros
  */
 package com.phonegap.plugins.barcodescanner;
 
+import org.apache.cordova.LOG;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -19,14 +20,17 @@ import android.os.Bundle;
 import android.util.Log;
 import android.content.pm.PackageManager;
 
+import com.google.zxing.client.android.Intents;
+import com.journeyapps.barcodescanner.CaptureActivity;
+
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
 import org.apache.cordova.PermissionHelper;
 
-import com.google.zxing.client.android.CaptureActivity;
-import com.google.zxing.client.android.encode.EncodeActivity;
-import com.google.zxing.client.android.Intents;
+//import com.google.zxing.client.android.CaptureActivity;
+//import com.google.zxing.client.android.encode.EncodeActivity;
+//import com.google.zxing.client.android.Intents;
 
 /**
  * This calls out to the ZXing barcode reader and returns the result.
@@ -60,7 +64,7 @@ public class BarcodeScanner extends CordovaPlugin {
 
     private static final String LOG_TAG = "BarcodeScanner";
 
-    private String [] permissions = { Manifest.permission.CAMERA };
+    private String[] permissions = {Manifest.permission.CAMERA};
 
     private JSONArray requestArgs;
     private CallbackContext callbackContext;
@@ -73,18 +77,17 @@ public class BarcodeScanner extends CordovaPlugin {
 
     /**
      * Executes the request.
-     *
+     * <p>
      * This method is called from the WebView thread. To do a non-trivial amount of work, use:
-     *     cordova.getThreadPool().execute(runnable);
-     *
+     * cordova.getThreadPool().execute(runnable);
+     * <p>
      * To run on the UI thread, use:
-     *     cordova.getActivity().runOnUiThread(runnable);
+     * cordova.getActivity().runOnUiThread(runnable);
      *
      * @param action          The action to execute.
      * @param args            The exec() arguments.
      * @param callbackContext The callback context used when calling back into JavaScript.
-     * @return                Whether the action was valid.
-     *
+     * @return Whether the action was valid.
      * @sa https://github.com/apache/cordova-android/blob/master/framework/src/org/apache/cordova/CordovaPlugin.java
      */
     @Override
@@ -116,10 +119,10 @@ public class BarcodeScanner extends CordovaPlugin {
         } else if (action.equals(SCAN)) {
 
             //android permission auto add
-            if(!hasPermisssion()) {
-              requestPermissions(0);
+            if (!hasPermisssion()) {
+                requestPermissions(0);
             } else {
-              scan(args);
+                scan(args);
             }
         } else {
             return false;
@@ -176,14 +179,14 @@ public class BarcodeScanner extends CordovaPlugin {
                         }
 
                         intentScan.putExtra(Intents.Scan.CAMERA_ID, obj.optBoolean(PREFER_FRONTCAMERA, false) ? 1 : 0);
-                        intentScan.putExtra(Intents.Scan.SHOW_FLIP_CAMERA_BUTTON, obj.optBoolean(SHOW_FLIP_CAMERA_BUTTON, false));
-                        intentScan.putExtra(Intents.Scan.SHOW_TORCH_BUTTON, obj.optBoolean(SHOW_TORCH_BUTTON, false));
-                        intentScan.putExtra(Intents.Scan.TORCH_ON, obj.optBoolean(TORCH_ON, false));
-                        intentScan.putExtra(Intents.Scan.SAVE_HISTORY, obj.optBoolean(SAVE_HISTORY, false));
+                        intentScan.putExtra("SHOW_FLIP_CAMERA_BUTTON", obj.optBoolean(SHOW_FLIP_CAMERA_BUTTON, false));
+                        intentScan.putExtra("SHOW_TORCH_BUTTON", obj.optBoolean(SHOW_TORCH_BUTTON, false));
+                        intentScan.putExtra("TORCH_ON", obj.optBoolean(TORCH_ON, false));
+                        intentScan.putExtra("SAVE_HISTORY", obj.optBoolean(SAVE_HISTORY, false));
                         boolean beep = obj.optBoolean(DISABLE_BEEP, false);
-                        intentScan.putExtra(Intents.Scan.BEEP_ON_SCAN, !beep);
+                        intentScan.putExtra("BEEP_ON_SCAN", false);
                         if (obj.has(RESULTDISPLAY_DURATION)) {
-                            intentScan.putExtra(Intents.Scan.RESULT_DISPLAY_DURATION_MS, "" + obj.optLong(RESULTDISPLAY_DURATION));
+                            intentScan.putExtra("RESULT_DISPLAY_DURATION_MS", "" + obj.optLong(RESULTDISPLAY_DURATION));
                         }
                         if (obj.has(FORMATS)) {
                             intentScan.putExtra(Intents.Scan.FORMATS, obj.optString(FORMATS));
@@ -192,7 +195,8 @@ public class BarcodeScanner extends CordovaPlugin {
                             intentScan.putExtra(Intents.Scan.PROMPT_MESSAGE, obj.optString(PROMPT));
                         }
                         if (obj.has(ORIENTATION)) {
-                            intentScan.putExtra(Intents.Scan.ORIENTATION_LOCK, obj.optString(ORIENTATION));
+                            Log.d("ORIENTATION", obj.optString(ORIENTATION));
+                            intentScan.putExtra(Intents.Scan.ORIENTATION_LOCKED, obj.optString(ORIENTATION));
                         }
                     }
 
@@ -200,7 +204,11 @@ public class BarcodeScanner extends CordovaPlugin {
 
                 // avoid calling other phonegap apps
                 intentScan.setPackage(that.cordova.getActivity().getApplicationContext().getPackageName());
-
+                Bundle b = intentScan.getExtras();
+                Log.e("intentScan", b.toString());
+                for (String key : b.keySet()) {
+                    Log.e(key, ""+b.get(key));
+                }
                 that.cordova.startActivityForResult(that, intentScan, REQUEST_CODE);
             }
         });
@@ -210,16 +218,23 @@ public class BarcodeScanner extends CordovaPlugin {
      * Called when the barcode scanner intent completes.
      *
      * @param requestCode The request code originally supplied to startActivityForResult(),
-     *                       allowing you to identify who this result came from.
+     *                    allowing you to identify who this result came from.
      * @param resultCode  The integer result code returned by the child activity through its setResult().
      * @param intent      An Intent, which can return result data to the caller (various data can be attached to Intent "extras").
      */
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        if (requestCode == REQUEST_CODE && this.callbackContext != null) {
+
+        if (intent != null && requestCode == REQUEST_CODE && this.callbackContext != null) {
             if (resultCode == Activity.RESULT_OK) {
                 JSONObject obj = new JSONObject();
                 try {
+                    Bundle b = intent.getExtras();
+                    Log.e("RESULT ON ACTIVITY", b.toString());
+                    for (String key : b.keySet()) {
+                        Log.e(key, ""+b.get(key));
+                    }
+
                     obj.put(TEXT, intent.getStringExtra("SCAN_RESULT"));
                     obj.put(FORMAT, intent.getStringExtra("SCAN_RESULT_FORMAT"));
                     obj.put(CANCELLED, false);
@@ -253,29 +268,29 @@ public class BarcodeScanner extends CordovaPlugin {
      * @param data The data to encode in the bar code.
      */
     public void encode(String type, String data) {
-        Intent intentEncode = new Intent(this.cordova.getActivity().getBaseContext(), EncodeActivity.class);
-        intentEncode.setAction(Intents.Encode.ACTION);
-        intentEncode.putExtra(Intents.Encode.TYPE, type);
-        intentEncode.putExtra(Intents.Encode.DATA, data);
-        // avoid calling other phonegap apps
-        intentEncode.setPackage(this.cordova.getActivity().getApplicationContext().getPackageName());
-
-        this.cordova.getActivity().startActivity(intentEncode);
+//        Intent intentEncode = new Intent(this.cordova.getActivity().getBaseContext(), EncodeActivity.class);
+//        intentEncode.setAction(Intents.Encode.ACTION);
+//        intentEncode.putExtra(Intents.Encode.TYPE, type);
+//        intentEncode.putExtra(Intents.Encode.DATA, data);
+//        // avoid calling other phonegap apps
+//        intentEncode.setPackage(this.cordova.getActivity().getApplicationContext().getPackageName());
+        LOG.e("ENCODER", "-------------------------");
+        LOG.e("ENCODER", "ERROR NOT FOUND ENCODER");
+        LOG.e("ENCODER", "-------------------------");
+//        this.cordova.getActivity().startActivity(intentEncode);
     }
 
     /**
      * check application's permissions
      */
-   public boolean hasPermisssion() {
-       for(String p : permissions)
-       {
-           if(!PermissionHelper.hasPermission(this, p))
-           {
-               return false;
-           }
-       }
-       return true;
-   }
+    public boolean hasPermisssion() {
+        for (String p : permissions) {
+            if (!PermissionHelper.hasPermission(this, p)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     /**
      * We override this so that we can access the permissions variable, which no longer exists in
@@ -283,38 +298,35 @@ public class BarcodeScanner extends CordovaPlugin {
      *
      * @param requestCode The code to get request action
      */
-   public void requestPermissions(int requestCode)
-   {
-       PermissionHelper.requestPermissions(this, requestCode, permissions);
-   }
+    public void requestPermissions(int requestCode) {
+        PermissionHelper.requestPermissions(this, requestCode, permissions);
+    }
 
-   /**
-   * processes the result of permission request
-   *
-   * @param requestCode The code to get request action
-   * @param permissions The collection of permissions
-   * @param grantResults The result of grant
-   */
-  public void onRequestPermissionResult(int requestCode, String[] permissions,
-                                         int[] grantResults) throws JSONException
-   {
-       PluginResult result;
-       for (int r : grantResults) {
-           if (r == PackageManager.PERMISSION_DENIED) {
-               Log.d(LOG_TAG, "Permission Denied!");
-               result = new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION);
-               this.callbackContext.sendPluginResult(result);
-               return;
-           }
-       }
+    /**
+     * processes the result of permission request
+     *
+     * @param requestCode  The code to get request action
+     * @param permissions  The collection of permissions
+     * @param grantResults The result of grant
+     */
+    public void onRequestPermissionResult(int requestCode, String[] permissions,
+                                          int[] grantResults) throws JSONException {
+        PluginResult result;
+        for (int r : grantResults) {
+            if (r == PackageManager.PERMISSION_DENIED) {
+                Log.d(LOG_TAG, "Permission Denied!");
+                result = new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION);
+                this.callbackContext.sendPluginResult(result);
+                return;
+            }
+        }
 
-       switch(requestCode)
-       {
-           case 0:
-               scan(this.requestArgs);
-               break;
-       }
-   }
+        switch (requestCode) {
+            case 0:
+                scan(this.requestArgs);
+                break;
+        }
+    }
 
     /**
      * This plugin launches an external Activity when the camera is opened, so we

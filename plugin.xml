@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" xmlns:rim="http://www.blackberry.com/ns/widgets" id="phonegap-plugin-barcodescanner" version="8.1.1-dev">
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0" 
+  xmlns:android="http://schemas.android.com/apk/res/android" 
+  xmlns:tools="http://schemas.android.com/tools" 
+  xmlns:rim="http://www.blackberry.com/ns/widgets" id="phonegap-plugin-barcodescanner" version="8.1.1-dev">
   <name>BarcodeScanner</name>
   <description>You can use the BarcodeScanner plugin to scan different types of barcodes (using the device's camera) and get the metadata encoded in them for processing within your application.</description>
   <license>MIT</license>
@@ -25,25 +28,28 @@
     <framework src="AVFoundation.framework" />
     <framework src="AudioToolbox.framework" />
   </platform>
+
   <platform name="android">
+    <hook type="after_prepare" src="hooks/android/manifest.js"/>
     <source-file src="src/android/com/phonegap/plugins/barcodescanner/BarcodeScanner.java" target-dir="src/com/phonegap/plugins/barcodescanner"/>
+    <source-file src="src/android/gradle.properties" target-dir="./"/>
     <config-file target="res/xml/config.xml" parent="/*">
       <feature name="BarcodeScanner">
         <param name="android-package" value="com.phonegap.plugins.barcodescanner.BarcodeScanner"/>
       </feature>
     </config-file>
     <config-file target="AndroidManifest.xml" parent="/manifest/application">
-      <activity android:name="com.google.zxing.client.android.CaptureActivity" android:clearTaskOnLaunch="true" android:configChanges="orientation|keyboardHidden|screenSize" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:windowSoftInputMode="stateAlwaysHidden" android:exported="false"/>
-      <activity android:name="com.google.zxing.client.android.encode.EncodeActivity" android:label="Share"/>
+      <activity android:name="com.journeyapps.barcodescanner.CaptureActivity" android:clearTaskOnLaunch="true" android:configChanges="orientation|keyboardHidden|screenSize" android:exported="false" android:windowSoftInputMode="stateAlwaysHidden" android:screenOrientation="fullSensor" tools:replace="android:screenOrientation"/>
     </config-file>
+
     <config-file target="AndroidManifest.xml" parent="/manifest">
       <uses-permission android:name="android.permission.CAMERA"/>
       <uses-permission android:name="android.permission.FLASHLIGHT"/>
       <uses-feature android:name="android.hardware.camera" android:required="true"/>
     </config-file>
+
     <framework src="src/android/barcodescanner.gradle" custom="true" type="gradleReference"/>
-    <framework src="com.android.support:support-v4:$ANDROID_SUPPORT_V4_VERSION"/>
-    <lib-file src="src/android/barcodescanner-release-2.1.5.aar"/>
+    <framework src="androidx.appcompat:appcompat:1.0.2"/>
     <preference name="ANDROID_SUPPORT_V4_VERSION" default="27.+"/>
   </platform>
   <platform name="windows">
